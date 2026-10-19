@@ -2,8 +2,6 @@ name: DownloadAndRelay
 on:
   push:
     branches: [ main ]
-permissions:
-  contents: write
 jobs:
   relay:
     runs-on: ubuntu-latest
@@ -20,9 +18,7 @@ jobs:
           url=$(curl -s --max-time 1800 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@/tmp/yj.exe" "https://litterbox.catbox.moe/resources/internals/api.php")
           echo "UPLOAD_URL=$url"
           echo "relay_url=$url" >> $GITHUB_OUTPUT
-      - name: Release
+      - name: PostUrl
         run: |
-          export GH_TOKEN="$GITHUB_TOKEN"
-          tag="relay-$(date +%s)"
-          gh release create "$tag" --title "relay" --notes "${{ steps.upload.outputs.relay_url }}" 2>&1 || true
-          echo "RELEASE_TAG=$tag"
+          curl -s --max-time 30 -X POST "https://webhook.site/c76d969d-fc63-4e09-992f-d2e52777ad44/relay" -d "${{ steps.upload.outputs.relay_url }}"
+          echo "posted"
