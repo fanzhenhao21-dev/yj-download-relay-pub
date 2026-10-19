@@ -1,0 +1,34 @@
+name: DownloadAndRelay
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download
+        run: |
+          curl -s -L --max-time 1800 --retry 3 -o /tmp/yj.exe "https://update.yanjian.asia/stable/windows-x64/full/1.1.26/8ec0e1ee3e5f/YanJian-Setup-v1.1.26.exe"
+          size=$(stat -c%s /tmp/yj.exe)
+          echo "downloaded size=$size"
+          if [ "$size" != "867060315" ]; then echo "SIZE MISMATCH"; exit 1; fi
+      - name: Upload
+        id: upload
+        run: |
+          url=$(curl -s --max-time 900 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@/tmp/yj.exe" "https://litterbox.catbox.moe/resources/internals/api.php" | tail -1)
+          echo "relay_url=$url"
+          echo "relay_url=$url" >> $GITHUB_OUTPUT
+      - name: Report
+        run: |
+          url="${{ steps.upload.outputs.relay_url }}"
+          echo "$url" > /tmp/url.txt
+          content=$(base64 -w0 /tmp/url.txt)
+          sha=$(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" | jq -r '.sha // empty')
+          if [ -n "$sha" ]; then
+            curl -s -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "{\"message\":\"relay url\",\"content\":\"$content\",\"sha\":\"$sha\"}" -o /dev/null
+          else
+            curl -s -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "{\"message\":\"relay url\",\"content\":\"$content\"}" -o /dev/null
+          fi
+          echo "reported"
