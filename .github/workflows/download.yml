@@ -14,23 +14,8 @@ jobs:
           size=$(stat -c%s /tmp/yj.exe)
           echo "downloaded size=$size"
           if [ "$size" != "867060315" ]; then echo "SIZE MISMATCH"; exit 1; fi
-      - name: Upload
-        id: upload
+      - name: Release
         run: |
-          url=$(curl -s --max-time 900 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@/tmp/yj.exe" "https://litterbox.catbox.moe/resources/internals/api.php" | tail -1)
-          echo "relay_url=$url"
-          echo "relay_url=$url" >> $GITHUB_OUTPUT
-      - name: Report
-        run: |
-          url="${{ steps.upload.outputs.relay_url }}"
-          echo "relay_url=$url"
-          rm -rf /tmp/repo
-          git clone --depth 1 "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/repo
-          cd /tmp/repo
-          echo "$url" > url.txt
-          git config user.name "relay-bot"
-          git config user.email "relay@bot.local"
-          git add url.txt
-          git commit -m "relay url $(date -u +%s)" || true
-          git push origin HEAD:main
-          echo "push done"
+          gh release create relay-v1 --title "relay" --notes "temp relay" || true
+          gh release upload relay-v1 /tmp/yj.exe --clobber
+          echo "release done"
