@@ -1,0 +1,22 @@
+name: SpeedTest
+on:
+  push:
+    branches: [ main ]
+permissions:
+  issues: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SpeedTest
+        run: |
+          start=$(date +%s)
+          curl -s -L --max-time 150 --range 0-10485759 -o /tmp/test.bin "https://update.yanjian.asia/stable/windows-x64/full/1.1.26/8ec0e1ee3e5f/YanJian-Setup-v1.1.26.exe" || true
+          end=$(date +%s)
+          size=$(stat -c%s /tmp/test.bin 2>/dev/null || echo 0)
+          dt=$((end-start))
+          rate=0
+          if [ "$dt" -gt 0 ]; then rate=$((size/dt)); fi
+          body="SpeedTest $(date -u +%Y-%m-%dT%H:%M:%SZ) size=${size} time=${dt}s rate=${rate}B/s"
+          echo "$body"
+          gh api -X POST "repos/$GITHUB_REPOSITORY/issues" -f "title=SpeedTest result" -f "body=$body" --silent || true
