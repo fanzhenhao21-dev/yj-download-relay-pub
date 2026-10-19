@@ -15,7 +15,8 @@ jobs:
       - name: Upload
         id: upload
         run: |
-          url=$(curl -s --max-time 1800 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@/tmp/yj.exe" "https://litterbox.catbox.moe/resources/internals/api.php")
+          cp /tmp/yj.exe /tmp/yj.zip
+          url=$(curl -s --max-time 1800 -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@/tmp/yj.zip" "https://litterbox.catbox.moe/resources/internals/api.php")
           echo "UPLOAD_URL=$url"
           echo "relay_url=$url" >> $GITHUB_OUTPUT
       - name: PostUrl
