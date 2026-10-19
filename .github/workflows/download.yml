@@ -23,12 +23,14 @@ jobs:
       - name: Report
         run: |
           url="${{ steps.upload.outputs.relay_url }}"
-          echo "$url" > /tmp/url.txt
-          content=$(base64 -w0 /tmp/url.txt)
-          sha=$(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" | jq -r '.sha // empty')
-          if [ -n "$sha" ]; then
-            curl -s -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "{\"message\":\"relay url\",\"content\":\"$content\",\"sha\":\"$sha\"}" -o /dev/null
-          else
-            curl -s -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/url.txt" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "{\"message\":\"relay url\",\"content\":\"$content\"}" -o /dev/null
-          fi
-          echo "reported"
+          echo "relay_url=$url"
+          rm -rf /tmp/repo
+          git clone --depth 1 "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/repo
+          cd /tmp/repo
+          echo "$url" > url.txt
+          git config user.name "relay-bot"
+          git config user.email "relay@bot.local"
+          git add url.txt
+          git commit -m "relay url $(date -u +%s)" || true
+          git push origin HEAD:main
+          echo "push done"
